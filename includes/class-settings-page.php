@@ -111,6 +111,49 @@ class Anam_SH_Settings_Page {
 
 		// Inline JS for live theme switching.
 		wp_add_inline_script( 'anam-sh-prism', $this->get_preview_js(), 'after' );
+
+		// Explicitly load PHP and TypeScript so custom grammars can extend them.
+		wp_enqueue_script(
+			'anam-sh-markup-templating',
+			$url . 'vendor/prism/components/prism-markup-templating.min.js',
+			array( 'anam-sh-prism' ),
+			$version,
+			true
+		);
+
+		wp_enqueue_script(
+			'anam-sh-lang-php',
+			$url . 'vendor/prism/components/prism-php.min.js',
+			array( 'anam-sh-markup-templating' ),
+			$version,
+			true
+		);
+
+		wp_enqueue_script(
+			'anam-sh-lang-typescript',
+			$url . 'vendor/prism/components/prism-typescript.min.js',
+			array( 'anam-sh-prism' ),
+			$version,
+			true
+		);
+
+		// WordPress custom grammar for admin preview.
+		wp_enqueue_script(
+			'anam-sh-wordpress',
+			$url . 'assets/js/prism-wordpress.js',
+			array( 'anam-sh-lang-php' ),
+			$version,
+			true
+		);
+
+		// MCP custom grammar for admin preview.
+		wp_enqueue_script(
+			'anam-sh-mcp',
+			$url . 'assets/js/prism-mcp.js',
+			array( 'anam-sh-lang-typescript' ),
+			$version,
+			true
+		);
 	}
 
 	/**
@@ -147,9 +190,10 @@ JS;
 	 * Render the settings page.
 	 */
 	public function render_page() {
-		$opts      = anam_sh_get_options();
-		$themes    = Anam_SH_Asset_Loader::get_theme_files();
-		$languages = Anam_SH_Asset_Loader::get_languages();
+		$opts        = anam_sh_get_options();
+		$themes      = Anam_SH_Asset_Loader::get_theme_files();
+		$theme_names = Anam_SH_Asset_Loader::get_theme_names();
+		$languages   = Anam_SH_Asset_Loader::get_languages();
 		?>
 		<div class="wrap anam-sh-settings">
 			<h1><?php esc_html_e( 'Anam Syntax Highlighter Settings', 'anam-syntax-highlighter' ); ?></h1>
@@ -167,7 +211,7 @@ JS;
 							<select id="anam-sh-theme" name="<?php echo esc_attr( self::OPTION ); ?>[theme]">
 								<?php foreach ( $themes as $slug => $file ) : ?>
 									<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $opts['theme'], $slug ); ?>>
-										<?php echo esc_html( ucfirst( $slug ) ); ?>
+										<?php echo esc_html( isset( $theme_names[ $slug ] ) ? $theme_names[ $slug ] : ucfirst( $slug ) ); ?>
 									</option>
 								<?php endforeach; ?>
 							</select>
