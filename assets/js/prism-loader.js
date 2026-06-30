@@ -31,7 +31,10 @@
 				if (label) {
 					var header = document.createElement('div');
 					header.className = 'anam-sh-header';
-					header.innerHTML = '<span class="anam-sh-label">' + label + '</span>';
+					var span = document.createElement('span');
+					span.className = 'anam-sh-label';
+					span.textContent = label;
+					header.appendChild(span);
 					block.insertBefore(header, block.firstChild);
 				}
 			}
