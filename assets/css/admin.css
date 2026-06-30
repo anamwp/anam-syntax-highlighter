@@ -1,0 +1,47 @@
+/* ==========================================================================
+   Anam Syntax Highlighter — shared & admin styles
+   ========================================================================== */
+
+/* ---- Front-end: code block wrapper ---- */
+.anam-sh-block {
+	position: relative;
+	margin: 1.5em 0;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+/* Header label bar */
+.anam-sh-header {
+	display: flex;
+	align-items: center;
+	padding: 6px 14px;
+	font-size: 12px;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	color: #ccc;
+	background: #1e1e1e;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.anam-sh-block pre[class*="language-"] {
+	margin: 0;
+	border-radius: 0;
+}
+
+/* ---- Admin: settings page ---- */
+.anam-sh-settings .form-table th {
+	width: 240px;
+}
+
+.anam-sh-preview {
+	max-width: 720px;
+	margin-top: 12px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.anam-sh-preview pre {
+	margin: 0 !important;
+}
