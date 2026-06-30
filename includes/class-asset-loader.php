@@ -47,12 +47,31 @@ class Anam_SH_Asset_Loader {
 				$code_attrs = $m['code_attrs'];
 				$code_body  = $m['code_body'];
 
-				// Detect language from class="language-xxx".
+				// Detect language using priority order:
+				// 1. data-lang attribute (highest priority)
+				// 2. language-xxx class (medium priority)
+				// 3. data-filename extension inference (new feature)
+				// 4. Global default fallback (lowest priority)
 				$language = $default_lang;
-				if ( preg_match( '/class="[^"]*language-(\w+)/', $code_attrs, $lang_m ) ) {
+
+				if ( preg_match( '/data-lang="([a-zA-Z0-9_-]+)"/', $code_attrs, $lang_m ) ) {
+					$language = $lang_m[1];
+				} elseif ( preg_match( '/data-lang="([a-zA-Z0-9_-]+)"/', $pre_attrs, $lang_m ) ) {
+					$language = $lang_m[1];
+				} elseif ( preg_match( '/class="[^"]*language-(\w+)/', $code_attrs, $lang_m ) ) {
 					$language = $lang_m[1];
 				} elseif ( preg_match( '/class="[^"]*language-(\w+)/', $pre_attrs, $lang_m ) ) {
 					$language = $lang_m[1];
+				} else {
+					// Infer language from data-filename extension.
+					$fn_attrs = $code_attrs . ' ' . $pre_attrs;
+					if ( preg_match( '/data-filename="[^"]*\.([a-zA-Z][a-zA-Z0-9]*)\"/', $fn_attrs, $fn_m ) ) {
+						$ext_map = self::get_extension_language_map();
+						$ext     = strtolower( $fn_m[1] );
+						if ( isset( $ext_map[ $ext ] ) ) {
+							$language = $ext_map[ $ext ];
+						}
+					}
 				}
 
 				// Ensure <code> has the language class.
@@ -284,6 +303,41 @@ class Anam_SH_Asset_Loader {
 			'copyButton' => (bool) $this->options['copy_button'],
 			'showHeader' => (bool) $this->options['show_header'],
 		) );
+	}
+
+	/**
+	 * Map of file extensions to Prism language identifiers.
+	 *
+	 * Used for inferring the language from a data-filename attribute.
+	 *
+	 * @return array Extension (lowercase) => language slug.
+	 */
+	public static function get_extension_language_map() {
+		return array(
+			'php'  => 'php',
+			'sql'  => 'sql',
+			'css'  => 'css',
+			'scss' => 'scss',
+			'sass' => 'sass',
+			'js'   => 'javascript',
+			'ts'   => 'typescript',
+			'json' => 'json',
+			'yaml' => 'yaml',
+			'yml'  => 'yaml',
+			'html' => 'markup',
+			'htm'  => 'markup',
+			'xml'  => 'markup',
+			'sh'   => 'bash',
+			'bash' => 'bash',
+			'py'   => 'python',
+			'rb'   => 'ruby',
+			'go'   => 'go',
+			'rs'   => 'rust',
+			'java' => 'java',
+			'c'    => 'c',
+			'cpp'  => 'cpp',
+			'cs'   => 'csharp',
+		);
 	}
 
 	/**

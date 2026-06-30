@@ -9,27 +9,28 @@
 	border-radius: 6px;
 	overflow: hidden;
 	width: 100%;
-	max-width: 100%;
 	box-sizing: border-box;
 }
 
-/* Ensure full-width works with WordPress wide/full-width alignment blocks */
-.alignwide .anam-sh-block,
-.alignfull .anam-sh-block,
-.wp-block-code.alignwide .anam-sh-block,
-.wp-block-code.alignfull .anam-sh-block {
-	max-width: none;
+/* Wide alignment — stretch to theme's wide width */
+.wp-block-code.alignwide .anam-sh-block {
 	width: 100%;
+}
+
+/* Full alignment — span full viewport width */
+.wp-block-code.alignfull .anam-sh-block {
+	width: 100vw;
+	margin-left: calc(50% - 50vw);
 }
 
 /* Prevent the pre element from adding unwanted horizontal constraints */
 .anam-sh-block pre[class*="language-"],
 .anam-sh-block pre {
-	max-width: 100%;
 	width: 100%;
 	box-sizing: border-box;
 	margin: 0;
 	border-radius: 0;
+	overflow-x: auto;
 }
 
 /* Header label bar */
