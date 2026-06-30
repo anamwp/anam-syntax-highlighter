@@ -235,6 +235,51 @@ class Anam_SH_Asset_Loader {
 			true
 		);
 
+		// Explicitly load the PHP component so the WordPress grammar can extend it.
+		// PHP requires markup-templating.
+		wp_enqueue_script(
+			'anam-sh-markup-templating',
+			$url . 'vendor/prism/components/prism-markup-templating.min.js',
+			array( 'anam-sh-prism' ),
+			$version,
+			true
+		);
+
+		wp_enqueue_script(
+			'anam-sh-lang-php',
+			$url . 'vendor/prism/components/prism-php.min.js',
+			array( 'anam-sh-markup-templating' ),
+			$version,
+			true
+		);
+
+		// Load TypeScript component so the MCP grammar can extend it.
+		wp_enqueue_script(
+			'anam-sh-lang-typescript',
+			$url . 'vendor/prism/components/prism-typescript.min.js',
+			array( 'anam-sh-prism' ),
+			$version,
+			true
+		);
+
+		// WordPress custom grammar — extends PHP with WP-specific tokens.
+		wp_enqueue_script(
+			'anam-sh-wordpress',
+			$url . 'assets/js/prism-wordpress.js',
+			array( 'anam-sh-lang-php' ),
+			$version,
+			true
+		);
+
+		// MCP custom grammar — extends TypeScript/JS with MCP SDK tokens.
+		wp_enqueue_script(
+			'anam-sh-mcp',
+			$url . 'assets/js/prism-mcp.js',
+			array( 'anam-sh-lang-typescript' ),
+			$version,
+			true
+		);
+
 		wp_localize_script( 'anam-sh-loader', 'anamSH', array(
 			'copyButton' => (bool) $this->options['copy_button'],
 			'showHeader' => (bool) $this->options['show_header'],
@@ -248,14 +293,54 @@ class Anam_SH_Asset_Loader {
 	 */
 	public static function get_theme_files() {
 		return array(
-			'default'         => 'themes/prism.min.css',
-			'coy'             => 'themes/prism-coy.min.css',
-			'dark'            => 'themes/prism-dark.min.css',
-			'funky'           => 'themes/prism-funky.min.css',
-			'okaidia'         => 'themes/prism-okaidia.min.css',
-			'solarizedlight'  => 'themes/prism-solarizedlight.min.css',
-			'tomorrow'        => 'themes/prism-tomorrow.min.css',
-			'twilight'        => 'themes/prism-twilight.min.css',
+			// — built-in Prism themes —
+			'default'        => 'themes/prism.min.css',
+			'coy'            => 'themes/prism-coy.min.css',
+			'dark'           => 'themes/prism-dark.min.css',
+			'funky'          => 'themes/prism-funky.min.css',
+			'okaidia'        => 'themes/prism-okaidia.min.css',
+			'solarizedlight' => 'themes/prism-solarizedlight.min.css',
+			'tomorrow'       => 'themes/prism-tomorrow.min.css',
+			'twilight'       => 'themes/prism-twilight.min.css',
+			// — community themes (prism-themes) —
+			'atom-dark'      => 'themes/prism-atom-dark.min.css',
+			'dracula'        => 'themes/prism-dracula.min.css',
+			'ghcolors'       => 'themes/prism-ghcolors.min.css',
+			'material-dark'  => 'themes/prism-material-dark.min.css',
+			'nord'           => 'themes/prism-nord.min.css',
+			'one-dark'       => 'themes/prism-one-dark.min.css',
+			'one-light'      => 'themes/prism-one-light.min.css',
+			'synthwave84'    => 'themes/prism-synthwave84.min.css',
+			'vsc-dark-plus'  => 'themes/prism-vsc-dark-plus.min.css',
+			'xonokai'        => 'themes/prism-xonokai.min.css',
+		);
+	}
+
+	/**
+	 * Human-readable display names for each theme slug.
+	 *
+	 * @return array slug => display name
+	 */
+	public static function get_theme_names() {
+		return array(
+			'default'        => 'Default',
+			'coy'            => 'Coy',
+			'dark'           => 'Dark',
+			'funky'          => 'Funky',
+			'okaidia'        => 'Okaidia',
+			'solarizedlight' => 'Solarized Light',
+			'tomorrow'       => 'Tomorrow',
+			'twilight'       => 'Twilight',
+			'atom-dark'      => 'Atom Dark',
+			'dracula'        => 'Dracula',
+			'ghcolors'       => 'GitHub Colors',
+			'material-dark'  => 'Material Dark',
+			'nord'           => 'Nord',
+			'one-dark'       => 'One Dark',
+			'one-light'      => 'One Light',
+			'synthwave84'    => 'Synthwave \'84',
+			'vsc-dark-plus'  => 'VS Code Dark+',
+			'xonokai'        => 'Xonokai (Monokai)',
 		);
 	}
 
@@ -267,12 +352,17 @@ class Anam_SH_Asset_Loader {
 	public static function get_languages() {
 		return array(
 			'php'        => 'PHP',
+			'wordpress'  => 'WordPress (PHP)',
 			'javascript' => 'JavaScript',
 			'typescript' => 'TypeScript',
+			'mcp'        => 'MCP Server (TypeScript/JS)',
 			'python'     => 'Python',
 			'css'        => 'CSS',
+			'less'       => 'LESS',
+			'sass'       => 'SASS',
+			'scss'       => 'SCSS',
 			'markup'     => 'HTML / Markup',
-			'bash'       => 'Bash',
+			'bash'       => 'Bash / Shell',
 			'java'       => 'Java',
 			'ruby'       => 'Ruby',
 			'go'         => 'Go',

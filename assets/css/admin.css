@@ -8,6 +8,28 @@
 	margin: 1.5em 0;
 	border-radius: 6px;
 	overflow: hidden;
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+/* Ensure full-width works with WordPress wide/full-width alignment blocks */
+.alignwide .anam-sh-block,
+.alignfull .anam-sh-block,
+.wp-block-code.alignwide .anam-sh-block,
+.wp-block-code.alignfull .anam-sh-block {
+	max-width: none;
+	width: 100%;
+}
+
+/* Prevent the pre element from adding unwanted horizontal constraints */
+.anam-sh-block pre[class*="language-"],
+.anam-sh-block pre {
+	max-width: 100%;
+	width: 100%;
+	box-sizing: border-box;
+	margin: 0;
+	border-radius: 0;
 }
 
 /* Header label bar */
@@ -22,11 +44,6 @@
 	color: #ccc;
 	background: #1e1e1e;
 	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.anam-sh-block pre[class*="language-"] {
-	margin: 0;
-	border-radius: 0;
 }
 
 /* ---- Admin: settings page ---- */
