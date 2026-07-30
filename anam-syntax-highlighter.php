@@ -21,6 +21,7 @@ define( 'ANAM_SH_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 require_once ANAM_SH_PLUGIN_DIR . 'includes/class-asset-loader.php';
 require_once ANAM_SH_PLUGIN_DIR . 'includes/class-settings-page.php';
+require_once ANAM_SH_PLUGIN_DIR . 'includes/class-block-editor.php';
 
 /**
  * Return saved plugin options merged with defaults.
@@ -47,5 +48,6 @@ add_action( 'plugins_loaded', function () {
 	new Anam_SH_Asset_Loader();
 	if ( is_admin() ) {
 		new Anam_SH_Settings_Page();
+		new Anam_SH_Block_Editor();
 	}
 } );
