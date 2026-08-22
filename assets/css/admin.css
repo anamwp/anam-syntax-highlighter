@@ -13,24 +13,57 @@
 }
 
 /* Wide alignment — stretch to theme's wide width */
-.wp-block-code.alignwide .anam-sh-block {
+.anam-sh-block.alignwide {
 	width: 100%;
 }
 
 /* Full alignment — span full viewport width */
-.wp-block-code.alignfull .anam-sh-block {
+.anam-sh-block.alignfull {
 	width: 100vw;
+	max-width: 100vw;
 	margin-left: calc(50% - 50vw);
 }
 
-/* Prevent the pre element from adding unwanted horizontal constraints */
+/* Prevent the pre element from adding unwanted horizontal constraints.
+   `border: none` also strips themes' own default <pre> border (e.g. Twenty
+   Twenty-One's `.wp-block-code { border: 0.1rem solid ... }`, which still
+   matches since our <pre> keeps its original `wp-block-code` class) — the
+   rounded, overflow-hidden .anam-sh-block wrapper is the only border/frame
+   the code block should show. */
 .anam-sh-block pre[class*="language-"],
 .anam-sh-block pre {
 	width: 100%;
 	box-sizing: border-box;
 	margin: 0;
+	border: none;
 	border-radius: 0;
 	overflow-x: auto;
+}
+
+/* Some themes (e.g. Twenty Twenty-One) set `overflow-x: auto` on <code>
+   itself. Combined with the line-numbers plugin's `position: relative` on
+   that same <code>, it becomes its own clipped scroll container — clipping
+   the line-number gutter, which is a negatively-offset absolute child meant
+   to sit in <pre>'s padding, before it ever gets painted. The <pre> above
+   already scrolls horizontally, so <code> doesn't need to.
+
+   `color: inherit` fixes a second, related bug from the same theme rule:
+   Twenty Twenty-One's `.wp-block-code code { color: var(--global--color-
+   primary); }` ties in specificity with Prism themes' own
+   `code[class*="language-"]` color rule, and (depending on stylesheet
+   load order) can win — overriding the *selected Prism theme's* base
+   text color with the site theme's own dark text color on every <code>
+   element. Actual token spans (.token.keyword etc.) are unaffected since
+   they're more specific, but untokenized plain text — SQL table/column
+   identifiers, since Prism's SQL grammar doesn't tokenize bare
+   identifiers — and the line-number digits (which use `currentColor`
+   inherited from <code>) both fall back to that wrong color, becoming
+   near-invisible on any dark Prism theme. Forcing <code> to inherit
+   <pre>'s color (which Prism's own theme rule sets correctly) restores
+   both. */
+.anam-sh-block code[class*="language-"] {
+	overflow: visible;
+	color: inherit;
 }
 
 /* Header label bar */
@@ -47,19 +80,333 @@
 	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* ---- Admin: settings page ---- */
-.anam-sh-settings .form-table th {
-	width: 240px;
+/* Line-numbers gutter — no separator border, number color follows each
+   theme's own text color (via currentColor) so it stays legible on both
+   light and dark themes instead of a single hardcoded gray. */
+.anam-sh-block .line-numbers .line-numbers-rows {
+	border-right: none;
 }
 
-.anam-sh-preview {
-	max-width: 720px;
-	margin-top: 12px;
-	border: 1px solid #ddd;
-	border-radius: 6px;
+.anam-sh-block .line-numbers-rows > span:before {
+	color: currentColor;
+	opacity: 0.4;
+}
+
+/* Copy button — icon instead of the default "Copy" text. The label span
+   (which prism-copy-to-clipboard.js already updates to "Copied!" / "Press
+   Ctrl+C to copy") is kept for screen readers via a visually-hidden class
+   instead of the icons; prism-loader.js injects the two <svg> icons and
+   toggles them off [data-copy-state] set by that same plugin. */
+.anam-sh-block .copy-to-clipboard-button {
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	width: 1.8em;
+	height: 1.8em;
+	padding: 0 !important;
+}
+
+.anam-sh-block .copy-to-clipboard-button .anam-copy-label {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
 	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }
 
-.anam-sh-preview pre {
-	margin: 0 !important;
+.anam-sh-block .copy-to-clipboard-button .anam-copy-icon {
+	display: none;
+	width: 1em;
+	height: 1em;
+}
+
+.anam-sh-block .copy-to-clipboard-button:not([data-copy-state="copy-success"]) .anam-copy-icon-copy,
+.anam-sh-block .copy-to-clipboard-button[data-copy-state="copy-success"] .anam-copy-icon-success {
+	display: block;
+}
+
+/* ---- "Kent Light" theme: minimal chrome, no top bar, corner language badge ---- */
+.anam-sh-theme-kent-light .anam-sh-header {
+	position: absolute;
+	top: auto;
+	bottom: 0.6em;
+	right: 1.2em;
+	left: auto;
+	display: inline-flex;
+	width: auto;
+	background: transparent;
+	border-bottom: none;
+	padding: 0;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: normal;
+	text-transform: none;
+	color: #2e3039;
+	opacity: 0.55;
+	pointer-events: none;
+	z-index: 1;
+}
+
+.anam-sh-theme-kent-light pre[class*="language-"] {
+	padding-bottom: 2.4em;
+}
+
+/* ==========================================================================
+   Admin: settings page
+   ========================================================================== */
+
+.anam-sh-settings {
+	max-width: none;
+	margin-right: 20px;
+}
+
+.anam-sh-settings .anam-sh-tagline {
+	max-width: 720px;
+	margin: 4px 0 24px;
+	color: #646970;
+	font-size: 14px;
+}
+
+.anam-sh-admin-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(380px, 34%);
+	align-items: start;
+	gap: 24px;
+	width: 100%;
+}
+
+@media (max-width: 1100px) {
+	.anam-sh-admin-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.anam-sh-admin-main form {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+/* ---- Cards ---- */
+.anam-sh-card {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	padding: 20px 24px 24px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.anam-sh-card-title {
+	margin: 0 0 16px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #f0f0f1;
+	font-size: 15px;
+	font-weight: 600;
+}
+
+/* ---- Field rows (selects, textareas) ---- */
+.anam-sh-field {
+	display: flex;
+	align-items: flex-start;
+	gap: 24px;
+	margin-bottom: 18px;
+}
+
+.anam-sh-field:last-child {
+	margin-bottom: 0;
+}
+
+.anam-sh-field label {
+	flex: 0 0 220px;
+	padding-top: 8px;
+	font-weight: 600;
+}
+
+.anam-sh-field-control {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.anam-sh-field select {
+	width: 100%;
+	max-width: 420px;
+}
+
+.anam-sh-field textarea {
+	max-width: 100%;
+}
+
+.anam-sh-field-description {
+	max-width: 640px;
+	margin: 6px 0 0;
+	color: #646970;
+	font-size: 13px;
+}
+
+@media (max-width: 700px) {
+	.anam-sh-field {
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.anam-sh-field label {
+		padding-top: 0;
+	}
+}
+
+/* ---- Toggle rows ---- */
+.anam-sh-toggle-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+	padding: 14px 0;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.anam-sh-toggle-row:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.anam-sh-toggle-row:first-child {
+	padding-top: 0;
+}
+
+.anam-sh-toggle-text strong {
+	display: block;
+	font-size: 14px;
+}
+
+.anam-sh-toggle-text p {
+	margin: 2px 0 0;
+	color: #646970;
+	font-size: 13px;
+}
+
+/* ---- Toggle switch ---- */
+.anam-sh-switch {
+	position: relative;
+	display: inline-block;
+	flex-shrink: 0;
+	width: 40px;
+	height: 22px;
+}
+
+.anam-sh-switch input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+	z-index: 1;
+}
+
+.anam-sh-switch-track {
+	position: absolute;
+	inset: 0;
+	background: #ccd0d4;
+	border-radius: 999px;
+	transition: background-color 0.15s ease;
+}
+
+.anam-sh-switch-thumb {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 18px;
+	height: 18px;
+	background: #fff;
+	border-radius: 50%;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+	transition: transform 0.15s ease;
+}
+
+.anam-sh-switch input:checked + .anam-sh-switch-track {
+	background: #2271b1;
+}
+
+.anam-sh-switch input:checked + .anam-sh-switch-track .anam-sh-switch-thumb {
+	transform: translateX(18px);
+}
+
+.anam-sh-switch input:focus-visible + .anam-sh-switch-track {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+}
+
+/* ---- Live preview panel ---- */
+.anam-sh-admin-sidebar {
+	position: sticky;
+	top: 40px;
+}
+
+.anam-sh-preview-panel {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	padding: 20px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.anam-sh-preview-panel-title {
+	margin-bottom: 14px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #f0f0f1;
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.anam-sh-preview-panel .anam-sh-block {
+	margin: 0 0 16px;
+}
+
+.anam-sh-preview-panel .anam-sh-block:last-of-type {
+	margin-bottom: 0;
+}
+
+.anam-sh-preview-inline {
+	margin: 16px 0 0;
+	padding-top: 16px;
+	border-top: 1px solid #f0f0f1;
+	color: #3c434a;
+	font-size: 14px;
+	line-height: 1.6;
+}
+
+/* Live-toggle overrides — these classes are added/removed by the settings
+   page's inline JS the instant a checkbox changes, before anything is
+   saved, so the preview always reflects the form's current (unsaved)
+   state. !important guarantees they win over both the active Prism theme
+   and any per-theme chrome (e.g. Kent Light's absolutely-positioned
+   header). */
+.anam-sh-preview-hide-line-numbers pre.line-numbers {
+	padding-left: 1.5em !important;
+}
+
+.anam-sh-preview-hide-line-numbers .line-numbers-rows {
+	display: none !important;
+}
+
+.anam-sh-preview-hide-copy .toolbar {
+	display: none !important;
+}
+
+.anam-sh-preview-hide-header .anam-sh-header {
+	display: none !important;
+}
+
+.anam-sh-preview-hide-inline-code .anam-sh-preview-inline code:not([class*="language-"]) {
+	background: none !important;
+	color: inherit !important;
+	padding: 0 !important;
+	border-radius: 0 !important;
+	font-size: inherit !important;
 }

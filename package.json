@@ -1,0 +1,9 @@
+{
+  "name": "anam-syntax-highlighter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Prism.js-based syntax highlighting for code blocks in WordPress posts and pages.",
+  "scripts": {
+    "build": "bash bin/build.sh"
+  }
+}

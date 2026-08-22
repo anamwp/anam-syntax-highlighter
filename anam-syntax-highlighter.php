@@ -30,12 +30,13 @@ require_once ANAM_SH_PLUGIN_DIR . 'includes/class-block-editor.php';
  */
 function anam_sh_get_options() {
 	$defaults = array(
-		'theme'            => 'okaidia',
-		'line_numbers'     => true,
-		'copy_button'      => true,
-		'show_header'      => true,
-		'default_language' => 'php',
-		'custom_css'       => '',
+		'theme'              => 'okaidia',
+		'line_numbers'       => true,
+		'copy_button'        => true,
+		'show_header'        => true,
+		'inline_code_style'  => true,
+		'default_language'   => 'php',
+		'custom_css'         => '',
 	);
 
 	$saved = get_option( 'anam_sh_options', array() );

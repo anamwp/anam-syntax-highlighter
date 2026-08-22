@@ -38,11 +38,12 @@ class Anam_SH_Asset_Loader {
 		$default_lang = sanitize_text_field( $this->options['default_language'] );
 		$show_header  = (bool) $this->options['show_header'];
 		$line_numbers = (bool) $this->options['line_numbers'];
+		$theme_slug   = sanitize_html_class( $this->options['theme'] );
 
 		// Match <pre…><code…>…</code></pre> blocks.
 		$content = preg_replace_callback(
 			'#(<pre(?P<pre_attrs>[^>]*)>)\s*(<code(?P<code_attrs>[^>]*)>)(?P<code_body>.*?)</code>\s*</pre>#si',
-			function ( $m ) use ( $default_lang, $show_header, $line_numbers ) {
+			function ( $m ) use ( $default_lang, $show_header, $line_numbers, $theme_slug ) {
 				$pre_attrs  = $m['pre_attrs'];
 				$code_attrs = $m['code_attrs'];
 				$code_body  = $m['code_body'];
@@ -50,8 +51,14 @@ class Anam_SH_Asset_Loader {
 				// Detect language using priority order:
 				// 1. data-lang attribute (highest priority)
 				// 2. language-xxx class (medium priority)
-				// 3. data-filename extension inference (new feature)
-				// 4. Global default fallback (lowest priority)
+				// 3. data-filename extension inference
+				// 4. Raw-SQL content sniffing (e.g. a block starting with
+				//    `SELECT …` that was typed with no language hint at
+				//    all — without this it would silently inherit the site
+				//    default, usually PHP/WordPress, which doesn't
+				//    recognize SQL keywords and leaves the whole block
+				//    barely tokenized)
+				// 5. Global default fallback (lowest priority)
 				$language = $default_lang;
 
 				if ( preg_match( '/data-lang="([a-zA-Z0-9_-]+)"/', $code_attrs, $lang_m ) ) {
@@ -71,6 +78,8 @@ class Anam_SH_Asset_Loader {
 						if ( isset( $ext_map[ $ext ] ) ) {
 							$language = $ext_map[ $ext ];
 						}
+					} elseif ( self::looks_like_sql( $code_body ) ) {
+						$language = 'sql';
 					}
 				}
 
@@ -113,7 +122,31 @@ class Anam_SH_Asset_Loader {
 					$header = '<div class="anam-sh-header"><span class="anam-sh-label">' . $label . '</span></div>';
 				}
 
-				return '<div class="anam-sh-block">'
+				// The block's alignwide/alignfull/etc. class lives on the <pre> (that's
+				// what core/code saves). Since we wrap the <pre> in our own div, that
+				// div becomes the new direct child of the content container, so themes
+				// that key their layout CSS off the *outermost* element's align class
+				// (e.g. `.entry-content > *:not(.alignwide)`) never see it. Mirror the
+				// align class onto our wrapper so width/alignment keeps working.
+				$wrapper_classes = 'anam-sh-block anam-sh-theme-' . $theme_slug;
+				if ( preg_match( '/class="([^"]*)"/', $pre_attrs, $pre_cls_m )
+					&& preg_match_all( '/\balign(?:wide|full|left|right|center)\b/', $pre_cls_m[1], $align_m )
+				) {
+					$wrapper_classes .= ' ' . implode( ' ', $align_m[0] );
+
+					// Strip the align class from the <pre> itself so theme CSS
+					// targeting `.alignwide`/`.alignfull` etc. only applies once,
+					// on the outer wrapper that's now the actual aligned element.
+					$new_pre_class = trim( preg_replace( '/\balign(?:wide|full|left|right|center)\b/', '', $pre_cls_m[1] ) );
+					$new_pre_class = preg_replace( '/\s+/', ' ', $new_pre_class );
+					$pre_attrs     = str_replace(
+						'class="' . $pre_cls_m[1] . '"',
+						'class="' . $new_pre_class . '"',
+						$pre_attrs
+					);
+				}
+
+				return '<div class="' . esc_attr( $wrapper_classes ) . '">'
 					. $header
 					. '<pre' . $pre_attrs . '><code' . $code_attrs . '>' . $code_body . '</code></pre>'
 					. '</div>';
@@ -184,6 +217,14 @@ class Anam_SH_Asset_Loader {
 			array( 'anam-sh-prism-theme' ),
 			$version
 		);
+
+		// Inline code styling (e.g. `code` in a paragraph) — opt-in. When off,
+		// inline code is left alone so the active theme's own default styling
+		// applies. Code blocks are unaffected either way; that CSS lives in
+		// admin.css and always loads.
+		if ( $this->options['inline_code_style'] ) {
+			wp_add_inline_style( 'anam-sh-front', self::get_inline_code_css() );
+		}
 
 		// Custom CSS override.
 		$custom_css = wp_strip_all_tags( $this->options['custom_css'] );
@@ -306,6 +347,49 @@ class Anam_SH_Asset_Loader {
 	}
 
 	/**
+	 * CSS for WordPress's "Inline code" text format (a bare <code> inside a
+	 * paragraph/list/heading), gated behind the "Style Inline Code" setting.
+	 * Excludes `[class*="language-"]` so it never touches Prism-highlighted
+	 * code blocks — those always carry a language-* class, added by
+	 * filter_content() above. A translucent background is used instead of a
+	 * flat color so it adapts to whatever background it's placed on.
+	 *
+	 * @return string
+	 */
+	public static function get_inline_code_css() {
+		return 'code:not([class*="language-"]) {'
+			. 'background: rgba(135, 131, 120, 0.15);'
+			. 'color: #8f3417;'
+			. 'padding: 0.2em 0.45em;'
+			. 'border-radius: 4px;'
+			. 'font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;'
+			. 'font-size: 0.875em;'
+			. 'word-break: break-word;'
+			. '}';
+	}
+
+	/**
+	 * Best-effort detection of raw SQL in an unlabeled code block. Only
+	 * consulted when no data-lang/language class/filename hint exists, so
+	 * a block like `SELECT * FROM wp_bookings WHERE id = 42` gets tagged
+	 * `language-sql` instead of silently inheriting the site's default
+	 * fallback language (commonly PHP/WordPress, whose grammar doesn't
+	 * recognize SQL keywords and leaves the block almost entirely
+	 * untokenized).
+	 *
+	 * @param string $code_body Raw (still HTML-escaped) code block content.
+	 * @return bool
+	 */
+	private static function looks_like_sql( $code_body ) {
+		$text = trim( html_entity_decode( wp_strip_all_tags( $code_body ), ENT_QUOTES ) );
+
+		return (bool) preg_match(
+			'/^(SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM|CREATE\s+(?:TABLE|DATABASE|INDEX|VIEW)|ALTER\s+TABLE|DROP\s+(?:TABLE|DATABASE|INDEX|VIEW)|TRUNCATE\s+TABLE|REPLACE\s+INTO|EXPLAIN)\b/i',
+			$text
+		);
+	}
+
+	/**
 	 * Map of file extensions to Prism language identifiers.
 	 *
 	 * Used for inferring the language from a data-filename attribute.
@@ -357,6 +441,8 @@ class Anam_SH_Asset_Loader {
 			'tomorrow'       => 'themes/prism-tomorrow.min.css',
 			'twilight'       => 'themes/prism-twilight.min.css',
 			// — community themes (prism-themes) —
+			'anam-light'     => 'themes/prism-anam-light.min.css',
+			'kent-light'     => 'themes/prism-kent-light.min.css',
 			'atom-dark'      => 'themes/prism-atom-dark.min.css',
 			'dracula'        => 'themes/prism-dracula.min.css',
 			'ghcolors'       => 'themes/prism-ghcolors.min.css',
@@ -385,6 +471,8 @@ class Anam_SH_Asset_Loader {
 			'solarizedlight' => 'Solarized Light',
 			'tomorrow'       => 'Tomorrow',
 			'twilight'       => 'Twilight',
+			'anam-light'     => 'Anam Light (High Contrast)',
+			'kent-light'     => 'Kent Light (kentcdodds.com style)',
 			'atom-dark'      => 'Atom Dark',
 			'dracula'        => 'Dracula',
 			'ghcolors'       => 'GitHub Colors',
